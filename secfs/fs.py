@@ -128,7 +128,28 @@ def _create(parent_i, name, create_as, create_for, isdir):
     #    given name
     #
     # Also make sure that you *return the final i* for the new inode!
-    return I(User(0), 0)
+    ihash = secfs.store.block.store(node.bytes())
+    i = secfs.tables.modmap(create_as, I(create_as), ihash)
+    if i == None:
+        raise RuntimeError
+    if isdir:
+        new_ihash = secfs.store.tree.add(i, b'.', i)
+        secfs.tables.modmap(create_as, i, new_ihash)
+        new_ihash = secfs.store.tree.add(i, b'..', i)
+        secfs.tables.modmap(create_as, i, new_ihash)    
+    if create_for.is_group():
+        group_node = Inode()
+        group_node.ctime = node.ctime
+        group_node.mtime = group_node.ctime
+        group_node.kind = 0
+        group_node.ex = True
+        group_ihash = secfs.store.block.store(group_node.bytes())
+        group_i = secfs.tables.modmap(create_as, I(create_for), group_ihash)
+        group_i.allocate()
+        #unfinished and maybe wrong
+    link(create_as, i, parent_i, name)
+    return i
+#    return I(User(0), 0)
 
 def create(parent_i, name, create_as, create_for):
     """

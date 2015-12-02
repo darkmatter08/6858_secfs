@@ -135,18 +135,14 @@ def _create(parent_i, name, create_as, create_for, isdir):
     if isdir:
         new_ihash = secfs.store.tree.add(i, b'.', i)
         secfs.tables.modmap(create_as, i, new_ihash)
-        new_ihash = secfs.store.tree.add(i, b'..', i)
-        secfs.tables.modmap(create_as, i, new_ihash)    
+        new_ihash = secfs.store.tree.add(i, b'..', parent_i)
+        secfs.tables.modmap(create_as, i, new_ihash)
     if create_for.is_group():
-        group_node = Inode()
-        group_node.ctime = node.ctime
-        group_node.mtime = group_node.ctime
-        group_node.kind = 0
-        group_node.ex = True
-        group_ihash = secfs.store.block.store(group_node.bytes())
-        group_i = secfs.tables.modmap(create_as, I(create_for), group_ihash)
-        group_i.allocate()
-        #unfinished and maybe wrong
+        group_i = secfs.tables.modmap(create_as, I(create_for), i)
+        #TODO:we don't know whether to link to i or group_i
+        # Passes same number of tests (57)
+        link(create_as, i, parent_i, name)
+        return group_i
     link(create_as, i, parent_i, name)
     return i
 #    return I(User(0), 0)

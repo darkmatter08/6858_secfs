@@ -25,7 +25,8 @@ class VSL:
             self.l[u] = VS()
         bestsum = -1
         bestkey = None
-        for k,v in self.l:
+        for k in self.l.keys():
+            v = self.l[k]
             s = sum(v.version_vector.values())
             if s > bestsum:
                 bestsum = s

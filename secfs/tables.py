@@ -32,9 +32,12 @@ def pre(refresh, user):
 
     signed_encoded_pickled_vsl = server.getVSL()
 
+    print("hello")
+    print(signed_encoded_pickled_vsl)
+
     # check for blank vsl
-    global vsl
     if len(signed_encoded_pickled_vsl) == 0:
+        global vsl
         vsl = VSL()
         return
 
@@ -46,10 +49,10 @@ def pre(refresh, user):
         raise RuntimeError('improperly signed VSL')
 
     # decode with base64
-    pickled_vsl = base64.b64decode(encoded_pickled_vsl)
+    pickled_vsl = base64.b64decode(encoded_pickled_vsl["data"])
 
-    # unpickle && set vsl variable
     global vsl
+    # unpickle && set vsl variable
     vsl = pickle.loads(pickled_vsl)
 
     # load user itables into current_itables
@@ -71,6 +74,7 @@ def pre(refresh, user):
     for group, group_hash in best_group_hash:
         current_itables[group] = Itable.load(group_hash)
 
+
 def post(push_vs):
     if not push_vs:
         # when creating a root, we should not push a VS (yet)
@@ -78,6 +82,7 @@ def post(push_vs):
         # put your post() code instead of "pass" below.
         return
 
+    global vsl
     # pickle vsl
     pickled_vsl = pickle.dumps(vsl)
 

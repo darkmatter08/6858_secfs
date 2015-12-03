@@ -28,12 +28,15 @@ def pre(refresh, user):
         # refresh usermap and groupmap
         refresh()
 
+    server.getVSL()
+
 def post(push_vs):
     if not push_vs:
         # when creating a root, we should not push a VS (yet)
         # you will probably want to leave this here and
         # put your post() code instead of "pass" below.
         return
+    server.storeVSL('ab')
     pass
 
 class Itable:

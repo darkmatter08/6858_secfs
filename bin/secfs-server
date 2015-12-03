@@ -12,6 +12,7 @@ class SecFSRPC():
         #
         self.blocks = {
                 # chash => block
+            'vsl' : ''
         }
 
 
@@ -54,6 +55,12 @@ class SecFSRPC():
         chash = hashlib.sha224(blob).hexdigest()
         self.blocks[chash] = blob
         return chash
+
+    def storeVSL(self, vsl):
+        self.blocks['vsl'] = vsl
+
+    def getVSL(self):
+        return self.blocks['vsl']
 
 
 import sys

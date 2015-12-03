@@ -141,7 +141,7 @@ def _create(parent_i, name, create_as, create_for, isdir):
         group_i = secfs.tables.modmap(create_as, I(create_for), i)
         #TODO:we don't know whether to link to i or group_i
         # Passes same number of tests (57)
-        link(create_as, i, parent_i, name)
+        link(create_as, group_i, parent_i, name)
         return group_i
     link(create_as, i, parent_i, name)
     return i

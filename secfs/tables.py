@@ -30,26 +30,25 @@ def pre(refresh, user):
         # refresh usermap and groupmap
         refresh()
 
-    signed_encoded_pickled_vsl = server.getVSL()
-
-    print("hello")
-    print(signed_encoded_pickled_vsl)
+    encoded_signed_pickled_vsl = server.getVSL()
 
     # check for blank vsl
-    if len(signed_encoded_pickled_vsl) == 0:
+    if len(encoded_signed_pickled_vsl) == 0:
         global vsl
         vsl = VSL()
         return
 
+    signed_pickled_vsl = base64.b64decode(encoded_pickled_vls["data"])
+
     # TODO: check signature
     if True: # TODO: use crypto.py to check signature
         # strip off signing bits
-        encoded_pickled_vsl = signed_encoded_pickled_vsl
+        pickled_vsl = signed_pickled_vsl
     else:
         raise RuntimeError('improperly signed VSL')
 
-    # decode with base64
-    pickled_vsl = base64.b64decode(encoded_pickled_vsl["data"])
+    print("pickled_vsl")
+    print(pickled_vsl)
 
     global vsl
     # unpickle && set vsl variable
@@ -57,7 +56,8 @@ def pre(refresh, user):
 
     # load user itables into current_itables
     global current_itables
-    for user, vs in vsl.l:
+    for user in vsl.l.keys():
+        vs = vsl.l[user]
         current_itables[user] = Itable.load(vs.ihandle)
 
     # load group itables into current_itables
@@ -86,15 +86,16 @@ def post(push_vs):
     # pickle vsl
     pickled_vsl = pickle.dumps(vsl)
 
-    # encode base64
-    encoded_pickled_vsl = base64.encodestring(pickled_vsl)
+    print("pickled_vsl")
+    print(pickled_vsl)
 
     # sign and add bits
     # TODO: add signing bits
-    signed_encoded_pickled_vsl = encoded_pickled_vsl
+    signed_pickled_vsl = pickled_vsl
 
     # send to server
-    server.storeVSL(signed_encoded_pickled_vsl)
+    # encoding happens by the rpc
+    server.storeVSL(signed_pickled_vsl)
 
 class Itable:
     """

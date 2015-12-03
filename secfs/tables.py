@@ -11,6 +11,7 @@ from secfs.types import I, Principal, User, Group
 
 # current_itables represents the current view of the file system's itables
 current_itables = {}
+vsl = None
 
 # a server connection handle is passed to us at mount time by secfs-fuse
 server = None
@@ -28,7 +29,40 @@ def pre(refresh, user):
         # refresh usermap and groupmap
         refresh()
 
-    server.getVSL()
+    signed_encoded_pickled_vsl = server.getVSL()
+
+    # TODO: check signature
+    if True: # TODO: use crypto.py to check signature
+        # strip off signing bits
+        encoded_pickled_vsl = signed_encoded_pickled_vsl
+    else:
+        raise RuntimeError('improperly signed VSL')
+
+    # decode with base64
+    pickled_vsl = base64.b64decode(encoded_pickled_vsl)
+
+    # unpickle && set vsl variable
+    global vsl
+    vsl = pickle.loads(pickled_vsl)
+
+    # load user itables into current_itables
+    global current_itables
+    for user, vs in vsl:
+        current_itables[user] = Itable.load(vs.ihandle)
+
+    # load group itables into current_itables
+    best_group_version, best_group_hash = {}, {}
+    for vs in vsl.values():
+        for group, group_ihandle in vs.group_ihandles:
+            group_version = vs.version_vector[group]
+            if group not in best_group_version or group_version > best_group_version[group]:
+                best_group_version[group] = group_version
+                best_group_hash[group] = group_ihandle
+            # else do nothing
+
+    #for most recent ONLY
+    for group, group_hash in best_group_hash:
+        current_itables[group] = Itable.load(group_hash)
 
 def post(push_vs):
     if not push_vs:
@@ -36,8 +70,19 @@ def post(push_vs):
         # you will probably want to leave this here and
         # put your post() code instead of "pass" below.
         return
-    server.storeVSL('ab')
-    pass
+
+    # pickle vsl
+    pickled_vsl = pickle.dumps(vsl)
+
+    # encode base64
+    encoded_pickled_vsl = base64.encodestring(pickled_vsl)
+
+    # sign and add bits
+    # TODO: add signing bits
+    signed_encoded_pickled_vsl = encoded_pickled_vsl
+
+    # send to server
+    server.storeVSL(signed_encoded_pickled_vsl)
 
 class Itable:
     """

@@ -38,7 +38,7 @@ def pre(refresh, user):
         vsl = VSL()
         return
 
-    signed_pickled_vsl = base64.b64decode(encoded_pickled_vls["data"])
+    signed_pickled_vsl = base64.b64decode(encoded_signed_pickled_vsl["data"])
 
     # TODO: check signature
     if True: # TODO: use crypto.py to check signature
@@ -48,6 +48,7 @@ def pre(refresh, user):
         raise RuntimeError('improperly signed VSL')
 
     print("pickled_vsl")
+    print("---"*10)
     print(pickled_vsl)
 
     global vsl
@@ -244,4 +245,5 @@ def modmap(mod_as, i, ihash):
         vsl.increment(i.p, i.p, ihash)
     t.mapping[i.n] = ihash # for groups, ihash is an i
     current_itables[i.p] = t
+    itable_hash = secfs.store.block.store(t.bytes()) # change increment to use this
     return i

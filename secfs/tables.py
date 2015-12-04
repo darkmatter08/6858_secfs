@@ -8,6 +8,7 @@ import pickle
 import secfs.store
 import secfs.fs
 from secfs.types import I, Principal, User, Group
+from secfs.vsl import *
 
 # current_itables represents the current view of the file system's itables
 current_itables = {}
@@ -31,6 +32,12 @@ def pre(refresh, user):
 
     signed_encoded_pickled_vsl = server.getVSL()
 
+    # check for blank vsl
+    global vsl
+    if len(signed_encoded_pickled_vsl) == 0:
+        vsl = VSL()
+        return
+
     # TODO: check signature
     if True: # TODO: use crypto.py to check signature
         # strip off signing bits
@@ -47,12 +54,12 @@ def pre(refresh, user):
 
     # load user itables into current_itables
     global current_itables
-    for user, vs in vsl:
+    for user, vs in vsl.l:
         current_itables[user] = Itable.load(vs.ihandle)
 
     # load group itables into current_itables
     best_group_version, best_group_hash = {}, {}
-    for vs in vsl.values():
+    for vs in vsl.l.values():
         for group, group_ihandle in vs.group_ihandles:
             group_version = vs.version_vector[group]
             if group not in best_group_version or group_version > best_group_version[group]:
@@ -194,6 +201,7 @@ def modmap(mod_as, i, ihash):
                 # XXX: kind of unnecessary to send two VS for this
                 _ihash = ihash
                 ihash = modmap(mod_as, I(mod_as), ihash)
+                vsl.increment(mod_as, i.p, _ihash, g_ihandle=ihash)
                 print("mapping", i, "to", ihash, "which again points to", _ihash)
         else:
             # This is not a group i!
@@ -226,6 +234,8 @@ def modmap(mod_as, i, ihash):
     # modify the entry, and store back the updated itable
     if i.p.is_group():
         print("mapping", i.n, "for group", i.p, "into", t.mapping)
+    else: #regular user
+        vsl.increment(i.p, i.p, ihash)
     t.mapping[i.n] = ihash # for groups, ihash is an i
     current_itables[i.p] = t
     return i

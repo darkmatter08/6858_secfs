@@ -1,4 +1,4 @@
-import copy
+import copy, base64
 
 # version structure
 class VS:
@@ -30,18 +30,18 @@ class VSL:
             if s > bestsum:
                 bestsum = s
                 bestkey = k
-	old_VS = self.l[bestkey]
+        old_VS = self.l[bestkey]
         old_vv = old_VS.version_vector
         new_vv = copy.deepcopy(old_vv)
-	if p not in new_vv:
-	    new_vv[p] = 0
-	new_vv[p] += 1
-	#setup new VS
-	new_VS = VS()
-	new_VS.ihandle = u_ihandle
-	new_VS.group_ihandles = copy.deepcopy(self.l[u].group_ihandles)
+        if p not in new_vv:
+            new_vv[p] = 0
+        new_vv[p] += 1
+        #setup new VS
+        new_VS = VS()
+        new_VS.ihandle = u_ihandle
+        new_VS.group_ihandles = copy.deepcopy(self.l[u].group_ihandles)
         if p.is_group():
             new_VS.group_ihandles[p] = g_ihandle
-	new_VS.version_vector = new_vv
-	
-	self.l[u] = new_VS
+        new_VS.version_vector = new_vv
+        
+        self.l[u] = new_VS

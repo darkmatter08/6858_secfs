@@ -208,7 +208,6 @@ def modmap(mod_as, i, ihash):
                 # XXX: kind of unnecessary to send two VS for this
                 _ihash = ihash
                 ihash = modmap(mod_as, I(mod_as), ihash)
-                vsl.increment(mod_as, i.p, _ihash, g_ihandle=ihash)
                 print("mapping", i, "to", ihash, "which again points to", _ihash)
         else:
             # This is not a group i!
@@ -241,9 +240,9 @@ def modmap(mod_as, i, ihash):
     # modify the entry, and store back the updated itable
     if i.p.is_group():
         print("mapping", i.n, "for group", i.p, "into", t.mapping)
-    else: #regular user
-        vsl.increment(i.p, i.p, ihash)
     t.mapping[i.n] = ihash # for groups, ihash is an i
     current_itables[i.p] = t
     itable_hash = secfs.store.block.store(t.bytes()) # change increment to use this
+    if not i.p.is_group():
+        vsl.increment(i.p, i.p, itable_hash)
     return i

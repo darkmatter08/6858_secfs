@@ -32,7 +32,9 @@ def pre(refresh, user):
     # check for blank vsl
     if len(encoded_signed_pickled_vsl) == 0:
         global vsl
-        vsl = VSL()
+        # this should only be run by root user
+        print("pre: User should be root: {}".format(user))
+        vsl = VSL(user)
         return
 
     signed_pickled_vsl = base64.b64decode(encoded_signed_pickled_vsl["data"])
@@ -77,7 +79,7 @@ def pre(refresh, user):
     t = Itable.load(vsl.l[user].ihandle)
     # t.mapping[0]
     # t.mapping[0]
-    secfs.fs.root_i = I(user, inumber=0)
+    secfs.fs.root_i = I(vsl.root, inumber=0)
 
     print('end of pre, current_itables: {}'.format(current_itables))
 

@@ -15,9 +15,10 @@ class VS:
 
 # version structure list
 class VSL:
-    def __init__(self):
+    def __init__(self, root):
         # list of version structures
         self.l = {}
+        self.root = root
 
     def increment(self, u, p, u_ihandle, g_ihandle=None):
         """

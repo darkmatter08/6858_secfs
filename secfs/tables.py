@@ -61,7 +61,8 @@ def pre(refresh, user):
     # load group itables into current_itables
     best_group_version, best_group_hash = {}, {}
     for vs in vsl.l.values():
-        for group, group_ihandle in vs.group_ihandles:
+        for group in vs.group_ihandles.keys():
+            group_ihandle = vs.group_ihandles[group]
             group_version = vs.version_vector[group]
             if group not in best_group_version or group_version > best_group_version[group]:
                 best_group_version[group] = group_version
@@ -69,7 +70,8 @@ def pre(refresh, user):
             # else do nothing
 
     #for most recent ONLY
-    for group, group_hash in best_group_hash:
+    for group in best_group_hash.keys():
+        group_hash = best_group_hash[group]
         current_itables[group] = Itable.load(group_hash)
 
     if refresh != None:

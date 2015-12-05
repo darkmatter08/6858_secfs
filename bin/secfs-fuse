@@ -629,7 +629,7 @@ def _getattr(i):
 
         if n.encrypt:
             if i.p.is_group():
-                entry.st_mode |= stat.S_IRGRP
+                entry.st_mode |= stat.S_IRUSR | stat.S_IRGRP
             else:
                 entry.st_mode |= stat.S_IRUSR
         else:

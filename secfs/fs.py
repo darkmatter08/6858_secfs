@@ -204,7 +204,7 @@ def write(write_as, i, off, buf, symm_key=None):
     # TODO: this is obviously stupid -- should not get rid of blocks that haven't changed
     bts = node.read()
 
-    if node.encrypt: # TODO: get key
+    if node.encrypt and len(bts) > 0: # TODO: get key
         bts = secfs.crypto.decrypt_sym(symm_key, bts)
 
     # write also allows us to extend a file

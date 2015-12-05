@@ -16,11 +16,13 @@ class SymKeyStore:
 		"""
 		# print("SymKeyStore.input_users: {}, type: {}".format(input_users, type(input_users)))
 		# self.users = {}
-		self.users = {u: asymm_encryption(Fernet.generate_key(), users[u]) for u in users}
+		self.users = {u: asymm_encryption(users[u], Fernet.generate_key()) for u in users}
 		# for u in input_users:
 		# 	self.users[u] = asymm_encryption(Fernet.generate_key(), input_users[u])
 
 		self.groups = {}
 		for g in groups:
 			group_key = Fernet.generate_key()
-			self.groups[g] = {u: asymm_encryption(group_key, users[u]) for u in groups[g]}
+			self.groups[g] = {u: asymm_encryption(users[u], group_key) for u in groups[g]}
+
+		print("SymKeyStore: users: {}\n groups: {}".format(users, groups))

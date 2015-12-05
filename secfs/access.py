@@ -5,7 +5,10 @@ def can_read(user, i):
     """
     Returns True if the given user can read the given i.
     """
-    return True
+    n = secfs.fs.get_inode(i)
+    if not n.encrypt:
+        return True
+    return can_write(user, i)
 
 def can_write(user, i):
     """

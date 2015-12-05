@@ -29,6 +29,7 @@ def decrypt_sym(key, data):
     """
     Decrypt the given data with the given key.
     """
+    # print("decrypt_sym: {}".format(key))
     f = Fernet(key)
     return f.decrypt(data)
 
@@ -36,6 +37,7 @@ def encrypt_sym(key, data):
     """
     Encrypt the given data with the given key.
     """
+    # print("encrypt_sym: {}".format(key))
     f = Fernet(key)
     return f.encrypt(data)
 

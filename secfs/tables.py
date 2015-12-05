@@ -75,7 +75,9 @@ def pre(refresh, user):
         refresh()
 
     t = Itable.load(vsl.l[user].ihandle)
-    secfs.fs.root_i = t.mapping[0]
+    # t.mapping[0]
+    # t.mapping[0]
+    secfs.fs.root_i = I(user, inumber=0)
 
     print('end of pre, current_itables: {}'.format(current_itables))
 

@@ -82,7 +82,7 @@ def init(owner, users, groups):
 
     return root_i
 
-def _create(parent_i, name, create_as, create_for, isdir):
+def _create(parent_i, name, create_as, create_for, isdir, encrypt=False):
     """
     _create allocates a new file, and links it into the directory at parent_i
     with the given name. The new file is owned by create_for, but is created
@@ -109,7 +109,7 @@ def _create(parent_i, name, create_as, create_for, isdir):
         else:
             raise PermissionError("cannot create in user-writeable directory {0} as {1}".format(parent_i, create_as))
 
-    node = Inode()
+    node = Inode(encrypt)
     node.ctime = time.time()
     node.mtime = node.ctime
     node.kind = 0 if isdir else 1
@@ -147,21 +147,21 @@ def _create(parent_i, name, create_as, create_for, isdir):
     return i
 #    return I(User(0), 0)
 
-def create(parent_i, name, create_as, create_for):
+def create(parent_i, name, create_as, create_for, encrypt=False):
     """
     Create a new file.
     See secfs.fs._create
     """
-    return _create(parent_i, name, create_as, create_for, False)
+    return _create(parent_i, name, create_as, create_for, False, encrypt=encrypt)
 
 def mkdir(parent_i, name, create_as, create_for):
     """
     Create a new directory.
     See secfs.fs._create
     """
-    return _create(parent_i, name, create_as, create_for, True)
+    return _create(parent_i, name, create_as, create_for, True, encrypt=False) # TODO should we encrypt directories?
 
-def read(read_as, i, off, size):
+def read(read_as, i, off, size, symm_key=None):
     """
     Read reads [off:off+size] bytes from the file at i.
     """
@@ -176,9 +176,15 @@ def read(read_as, i, off, size):
         else:
             raise PermissionError("cannot read from user-readable file {0} as {1}".format(i, read_as))
 
-    return get_inode(i).read()[off:off+size]
+    node = get_inode(i)
+    a = node.read()
 
-def write(write_as, i, off, buf):
+    if node.encrypt and len(a) > 0: # TODO: verify 2nd condition
+        a = secfs.crypto.decrypt_sym(symm_key, a)
+
+    return a[off:off+size]
+
+def write(write_as, i, off, buf, symm_key=None):
     """
     Write writes the given bytes into the file at i at the given offset.
     """
@@ -198,11 +204,17 @@ def write(write_as, i, off, buf):
     # TODO: this is obviously stupid -- should not get rid of blocks that haven't changed
     bts = node.read()
 
+    if node.encrypt: # TODO: get key
+        bts = secfs.crypto.decrypt_sym(symm_key, bts)
+
     # write also allows us to extend a file
     if off + len(buf) > len(bts):
         bts = bts[:off] + buf
     else:
         bts = bts[:off] + buf + bts[off+len(buf):]
+
+    if node.encrypt: # TODO: get key
+        bts = secfs.crypto.encrypt_sym(symm_key, bts)
 
     # update the inode
     node.blocks = [secfs.store.block.store(bts)]

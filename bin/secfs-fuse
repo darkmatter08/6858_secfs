@@ -13,6 +13,8 @@ import secfs.access
 import secfs.store
 import secfs.fs
 from secfs.types import I, Principal, User, Group
+from secfs.SymKeyStore import SymKeyStore
+import base64
 
 # Welcome to the SecFS secure file system.
 # This is the main entry point for all FUSE file system operations.
@@ -219,10 +221,14 @@ class SecFS(llfuse.Operations):
             # initialize a new share, and tell the server about it. don't
             # refresh the user and group maps, as they have not yet been built.
             self._pre(mounter, False)
-            root = secfs.fs.init(mounter,
-                {u: secfs.crypto.generate_key(u) for u in secfs.crypto.keys},
-                {Group(100): [u for u in secfs.crypto.keys if u.id != 666]}
-            )
+            users = {u: secfs.crypto.generate_key(u) for u in secfs.crypto.keys}
+            groups = {Group(100): [u for u in secfs.crypto.keys if u.id != 666]}
+            root = secfs.fs.init(mounter, users, groups)
+
+            # initalize symmetric key datastructure here with users and groups
+            sks = SymKeyStore(users, groups)
+            self.server.storeSKS(pickle.dumps(sks))
+
             self.server.create(self.share, root)
             self._post()
 
@@ -351,13 +357,33 @@ class SecFS(llfuse.Operations):
 
         return True
 
+    def get_symm_key(self):
+        global lastctx
+        ctx = lastctx
+
+        who = User(ctx.uid)
+        if (ctx.umask & 0o200) != 0:
+            # user gave up write permission, so donating to group
+            who = Group(ctx.gid)
+
+        # ALWAYS get symmetric key
+        sks = pickle.loads(base64.b64decode(self.server.getSKS()['data']))
+        # as a group
+        if isinstance(who, Group):
+            encrypted_symm_key = sks.groups[who][User(ctx.uid)]
+        else:
+            encrypted_symm_key = sks.users[who]
+        # TODO asymmetric key decryption here
+        symm_key = encrypted_symm_key
+        return symm_key
+
     def read(self, fh, offset, length):
         print("READ", fh, offset, length)
 
         try:
             fh = fhs[fh]
             self._pre(fh[1])
-            ret = secfs.fs.read(fh[1], fh[0], offset, length)
+            ret = secfs.fs.read(fh[1], fh[0], offset, length, self.get_symm_key()) # TODO: check this works
             self._post()
             return ret
         except PermissionError as e:
@@ -416,7 +442,7 @@ class SecFS(llfuse.Operations):
             encrypt = True
 
         try:
-            i = secfs.fs.create(inodes[parent_inode], name, User(ctx.uid), who)
+            i = secfs.fs.create(inodes[parent_inode], name, User(ctx.uid), who, encrypt=encrypt)
             ret = (new_fh(i, ctx.uid), _getattr(i))
             self._post()
             return ret
@@ -434,7 +460,7 @@ class SecFS(llfuse.Operations):
         try:
             fh = fhs[fh]
             self._pre(fh[1])
-            ret = secfs.fs.write(fh[1], fh[0], off, buf)
+            ret = secfs.fs.write(fh[1], fh[0], off, buf, self.get_symm_key()) # TODO: check this works
             self._post()
             return ret
         except PermissionError as e:

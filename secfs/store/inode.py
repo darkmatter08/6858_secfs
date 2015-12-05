@@ -3,13 +3,14 @@ import secfs.store.block
 import secfs.crypto
 
 class Inode:
-    def __init__(self):
+    def __init__(self, encrypt=False):
         self.size = 0
         self.kind = 0 # 0 is dir, 1 is file
         self.ex = False
         self.ctime = 0
         self.mtime = 0
         self.blocks = []
+        self.encrypt = encrypt
 
     def load(ihash):
         """

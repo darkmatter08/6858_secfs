@@ -64,6 +64,12 @@ class SecFSRPC():
         print("get vsl: {}".format(self.blocks['vsl']))
         return self.blocks['vsl']
 
+    def storeSKS(self, sks):
+        self.blocks['sks'] = sks
+
+    def getSKS(self):
+        return self.blocks['sks']
+
 
 import sys
 if len(sys.argv) != 2:

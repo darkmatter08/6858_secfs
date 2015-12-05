@@ -25,7 +25,7 @@ def pre(refresh, user):
     Called before all user file system operations, right after we have obtained
     an exclusive server lock.
     """
-    print('start of pre, current_itables: {}'.format(current_itables))
+    # print('start of pre, current_itables: {}'.format(current_itables))
 
     encoded_signed_pickled_vsl = server.getVSL()
 
@@ -33,7 +33,7 @@ def pre(refresh, user):
     if len(encoded_signed_pickled_vsl) == 0:
         global vsl
         # this should only be run by root user
-        print("pre: User should be root: {}".format(user))
+        # print("pre: User should be root: {}".format(user))
         vsl = VSL(user)
         return
 
@@ -46,7 +46,7 @@ def pre(refresh, user):
     else:
         raise RuntimeError('improperly signed VSL')
 
-    print("pickled_vsl: {}".format(pickled_vsl))
+    # print("pickled_vsl: {}".format(pickled_vsl))
 
     global vsl
     # unpickle && set vsl variable
@@ -96,8 +96,8 @@ def post(push_vs):
     # pickle vsl
     pickled_vsl = pickle.dumps(vsl)
 
-    print("pickled_vsl")
-    print(pickled_vsl)
+    # print("pickled_vsl")
+    # print(pickled_vsl)
 
     # sign and add bits
     # TODO: add signing bits
@@ -154,9 +154,6 @@ def resolve(i, resolve_groups = True):
     global current_itables
     if principal not in current_itables:
         # User does not yet have an itable
-        print("---"*10)
-        print(current_itables)
-        print("principal not in current_itables")
         return None 
 
     t = current_itables[principal]

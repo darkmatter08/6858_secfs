@@ -625,7 +625,15 @@ def _getattr(i):
             entry.st_mode |= stat.S_IFREG
 
         # Is it encrypted (i.e. limited read access)?
-        entry.st_mode |= stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+        # entry.st_mode |= stat.S_IRUSR# | stat.S_IRGRP | stat.S_IROTH
+
+        if n.encrypt:
+            if i.p.is_group():
+                entry.st_mode |= stat.S_IRGRP
+            else:
+                entry.st_mode |= stat.S_IRUSR
+        else:
+            entry.st_mode |= stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
 
         # Who can write (i.e. owned by group or user)?
         if i.p.is_group():

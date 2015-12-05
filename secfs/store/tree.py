@@ -34,6 +34,7 @@ class Directory:
         self.inode = None
         self.children = []
 
+        print('Directory.__init__() i : {}'.format(i))
         self.inode = secfs.fs.get_inode(i)
         if self.inode.kind != 0:
             raise TypeError("inode with ihash {} is not a directory".format(ihash))

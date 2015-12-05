@@ -57,9 +57,11 @@ class SecFSRPC():
         return chash
 
     def storeVSL(self, vsl):
+        print("received vsl: {}".format(vsl))
         self.blocks['vsl'] = vsl
 
     def getVSL(self):
+        print("get vsl: {}".format(self.blocks['vsl']))
         return self.blocks['vsl']
 
 

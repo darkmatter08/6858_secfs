@@ -25,10 +25,7 @@ def pre(refresh, user):
     Called before all user file system operations, right after we have obtained
     an exclusive server lock.
     """
-
-    if refresh != None:
-        # refresh usermap and groupmap
-        refresh()
+    print('start of pre, current_itables: {}'.format(current_itables))
 
     encoded_signed_pickled_vsl = server.getVSL()
 
@@ -47,9 +44,7 @@ def pre(refresh, user):
     else:
         raise RuntimeError('improperly signed VSL')
 
-    print("pickled_vsl")
-    print("---"*10)
-    print(pickled_vsl)
+    print("pickled_vsl: {}".format(pickled_vsl))
 
     global vsl
     # unpickle && set vsl variable
@@ -75,6 +70,14 @@ def pre(refresh, user):
     for group, group_hash in best_group_hash:
         current_itables[group] = Itable.load(group_hash)
 
+    if refresh != None:
+        # refresh usermap and groupmap
+        refresh()
+
+    t = Itable.load(vsl.l[user].ihandle)
+    secfs.fs.root_i = t.mapping[0]
+
+    print('end of pre, current_itables: {}'.format(current_itables))
 
 def post(push_vs):
     if not push_vs:
@@ -145,6 +148,9 @@ def resolve(i, resolve_groups = True):
     global current_itables
     if principal not in current_itables:
         # User does not yet have an itable
+        print("---"*10)
+        print(current_itables)
+        print("principal not in current_itables")
         return None 
 
     t = current_itables[principal]
@@ -245,4 +251,7 @@ def modmap(mod_as, i, ihash):
     itable_hash = secfs.store.block.store(t.bytes()) # change increment to use this
     if not i.p.is_group():
         vsl.increment(i.p, i.p, itable_hash)
+    else:
+        user_itable_hash = secfs.store.block.store(current_itables[mod_as].bytes())
+        vsl.increment(mod_as, i.p, user_itable_hash, g_ihandle=itable_hash)
     return i

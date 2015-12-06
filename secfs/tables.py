@@ -83,7 +83,7 @@ def pre(refresh, user):
     # t.mapping[0]
     secfs.fs.root_i = I(vsl.root, inumber=0)
 
-    print('end of pre, current_itables: {}'.format(current_itables))
+    # print('end of pre, current_itables: {}'.format(current_itables))
 
 def post(push_vs):
     if not push_vs:

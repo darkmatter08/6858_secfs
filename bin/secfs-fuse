@@ -357,22 +357,29 @@ class SecFS(llfuse.Operations):
 
         return True
 
-    def get_symm_key(self):
-        global lastctx
-        ctx = lastctx
+    def get_symm_key(self, i, mod_as):
+        # global lastctx
+        # ctx = lastctx
 
-        who = User(ctx.uid)
-        if (ctx.umask & 0o200) != 0:
-            # user gave up write permission, so donating to group
-            who = Group(ctx.gid)
+        # who = User(ctx.uid)
+
+        # print("\nget_symm_key:\nwho: {}, ctx.uid: {}".format(who, ctx.uid))
+        # print(dir(ctx))
+        # for item in dir(ctx):
+        #     print("ctx.{}: {}".format(item, getattr(ctx, item)))
+
+        # if (ctx.umask & 0o200) != 0:
+        #     # user gave up write permission, so donating to group
+        #     who = Group(ctx.gid)
 
         # ALWAYS get symmetric key
         sks = pickle.loads(base64.b64decode(self.server.getSKS()['data']))
-        # as a group
-        if isinstance(who, Group):
-            encrypted_symm_key = sks.groups[who][User(ctx.uid)]
+
+        # from i figure out file ownership (group or not?)
+        if i.p.is_group():
+            encrypted_symm_key = sks.groups[i.p].get(mod_as, None)
         else:
-            encrypted_symm_key = sks.users[who]
+            encrypted_symm_key = sks.users[mod_as]
         # TODO asymmetric key decryption here
         symm_key = encrypted_symm_key
         return symm_key
@@ -383,7 +390,7 @@ class SecFS(llfuse.Operations):
         try:
             fh = fhs[fh]
             self._pre(fh[1])
-            ret = secfs.fs.read(fh[1], fh[0], offset, length, self.get_symm_key()) # TODO: check this works
+            ret = secfs.fs.read(fh[1], fh[0], offset, length, self.get_symm_key(fh[0], fh[1])) # TODO: check this works
             self._post()
             return ret
         except PermissionError as e:
@@ -460,7 +467,7 @@ class SecFS(llfuse.Operations):
         try:
             fh = fhs[fh]
             self._pre(fh[1])
-            ret = secfs.fs.write(fh[1], fh[0], off, buf, self.get_symm_key()) # TODO: check this works
+            ret = secfs.fs.write(fh[1], fh[0], off, buf, self.get_symm_key(fh[0], fh[1])) # TODO: check this works
             self._post()
             return ret
         except PermissionError as e:

@@ -316,9 +316,18 @@ class SecFS(llfuse.Operations):
         if node.kind != 0:
             raise llfuse.FUSEError(errno.ENOTDIR)        
 
-        for e, o in secfs.fs.readdir(fhs[fh][0], off, self.get_symm_key(fhs[fh][0], fhs[fh][1])):
-            print (e[0].decode('utf-8'), e[1], o)
-            yield (e[0], _getattr(e[1]), o)
+        try:
+
+            for e, o in secfs.fs.readdir(fhs[fh][0], off, fhs[fh][1], self.get_symm_key(fhs[fh][0], fhs[fh][1])):
+                print (e[0].decode('utf-8'), e[1], o)
+                yield (e[0], _getattr(e[1]), o)
+        except PermissionError as e:
+            print("Illegal dir access:", e)
+            self._post()
+            raise llfuse.FUSEError(errno.EACCES)
+        except:
+            self._post()
+            raise
 
         self._post()
 

@@ -234,12 +234,21 @@ def write(write_as, i, off, buf, symm_key=None):
 
     return len(buf)
 
-def readdir(i, off, symm_key=None):
+def readdir(i, off, read_as, symm_key=None):
     """
     Return a list of is in the directory at i.
     Each returned list item is a tuple of an i and an index. The index can be
     used to request a suffix of the list at a later time.
     """
+
+    if not secfs.access.can_read(read_as, i):
+        if i.p.is_group():
+            raise PermissionError("cannot read group-owned directory {0} as {1}; user is not in group".format(i, read_as))
+        else:
+            raise PermissionError("cannot read user-owned directory {0} as {1}".format(i, read_as))
+
+    
+
     dr = Directory(i, symm_key=symm_key)
     if dr == None:
         return None

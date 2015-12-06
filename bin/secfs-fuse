@@ -220,6 +220,7 @@ class SecFS(llfuse.Operations):
 
             # initialize a new share, and tell the server about it. don't
             # refresh the user and group maps, as they have not yet been built.
+            print("_pre in init")
             self._pre(mounter, False)
             users = {u: secfs.crypto.generate_key(u) for u in secfs.crypto.keys}
             groups = {Group(100): [u for u in secfs.crypto.keys if u.id != 666]}
@@ -259,6 +260,7 @@ class SecFS(llfuse.Operations):
         lastctx.gid = int(os.getegid())
         lastctx.umask = 0o022
 
+        print("_pre in init with refresh")
         self._pre(mounter)
         self._post(False)
 

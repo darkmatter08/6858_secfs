@@ -84,10 +84,11 @@ class VSL:
         vsl = VSL(self.root)
         for user in self.l.keys():
             (signature, pickled_vs) = self.l[user]
-            pubkey = secfs.fs.usermap[user]
-            if not secfs.crypto.verify(pubkey, signature, pickled_vs):
-                print("signed user:{}".format(user))
-                raise RuntimeError("bad signature on VS of: {}".format(user))
+            if user in secfs.fs.usermap:
+                pubkey = secfs.fs.usermap[user]
+                if not secfs.crypto.verify(pubkey, signature, pickled_vs):
+                    print("signed user:{}".format(user))
+                    raise RuntimeError("bad signature on VS of: {}".format(user))
             vs = pickle.loads(pickled_vs)
             vsl.l[user] = vs
         return vsl

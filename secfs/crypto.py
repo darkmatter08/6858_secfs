@@ -108,7 +108,11 @@ def verify(pubkey, signature, data):
         hashes.SHA256()
     )
     verifier.update(data)
-    return verifier.verify()
+    try:
+        b = verifier.verify()
+    except:
+        return False
+    return True
 
 def encrypt_asym(pubkey, data):
     # TODO: implement

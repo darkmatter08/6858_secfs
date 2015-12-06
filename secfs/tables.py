@@ -82,14 +82,14 @@ def pre(refresh, user):
         group_hash = best_group_hash[group]
         current_itables[group] = Itable.load(group_hash)
 
-    if refresh != None:
-        # refresh usermap and groupmap
-        refresh()
-
     t = Itable.load(vsl.l[user].ihandle)
     # t.mapping[0]
     # t.mapping[0]
     secfs.fs.root_i = I(vsl.root, inumber=0)
+
+    if refresh != None:
+        # refresh usermap and groupmap
+        refresh()
 
     # print('end of pre, current_itables: {}'.format(current_itables))
 

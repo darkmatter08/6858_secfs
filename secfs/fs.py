@@ -140,7 +140,7 @@ def _create(parent_i, name, create_as, create_for, isdir, encrypt=False, symm_ke
         secfs.tables.modmap(create_as, i, new_ihash)
     if create_for.is_group():
         group_i = secfs.tables.modmap(create_as, I(create_for), i)
-        #TODO:we don't know whether to link to i or group_i
+        # TODO:we don't know whether to link to i or group_i
         # Passes same number of tests (57)
         if not parent_node.encrypt:
             link(create_as, group_i, parent_i, name)
@@ -152,7 +152,6 @@ def _create(parent_i, name, create_as, create_for, isdir, encrypt=False, symm_ke
     else:
         link(create_as, i, parent_i, name, symm_key)
     return i
-#    return I(User(0), 0)
 
 def create(parent_i, name, create_as, create_for, encrypt=False, symm_key=None):
     """
@@ -166,7 +165,7 @@ def mkdir(parent_i, name, create_as, create_for, encrypt=False, symm_key=None):
     Create a new directory.
     See secfs.fs._create
     """
-    return _create(parent_i, name, create_as, create_for, True, encrypt=encrypt, symm_key=symm_key) # TODO should we encrypt directories?
+    return _create(parent_i, name, create_as, create_for, True, encrypt=encrypt, symm_key=symm_key)
 
 def read(read_as, i, off, size, symm_key=None):
     """
@@ -186,7 +185,7 @@ def read(read_as, i, off, size, symm_key=None):
     node = get_inode(i)
     a = node.read()
 
-    if node.encrypt and len(a) > 0: # TODO: verify 2nd condition
+    if node.encrypt and len(a) > 0:
         a = secfs.crypto.decrypt_sym(symm_key, a)
 
     return a[off:off+size]
@@ -211,7 +210,7 @@ def write(write_as, i, off, buf, symm_key=None):
     # TODO: this is obviously stupid -- should not get rid of blocks that haven't changed
     bts = node.read()
 
-    if node.encrypt and len(bts) > 0: # TODO: get key
+    if node.encrypt and len(bts) > 0:
         bts = secfs.crypto.decrypt_sym(symm_key, bts)
 
     # write also allows us to extend a file
@@ -220,7 +219,7 @@ def write(write_as, i, off, buf, symm_key=None):
     else:
         bts = bts[:off] + buf + bts[off+len(buf):]
 
-    if node.encrypt: # TODO: get key
+    if node.encrypt:
         bts = secfs.crypto.encrypt_sym(symm_key, bts)
 
     # update the inode

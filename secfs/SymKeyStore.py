@@ -1,8 +1,7 @@
 from cryptography.fernet import Fernet
-
-def asymm_encryption(key, data):
-	# TODO: Actually implement
-	return data
+import secfs.crypto
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.hazmat.backends import default_backend
 
 class SymKeyStore:
 	
@@ -14,15 +13,13 @@ class SymKeyStore:
 		groups: d dict with key: group (prinicpal that is a group)
 		and value: list of users (prinicpal that is a user)
 		"""
-		# print("SymKeyStore.input_users: {}, type: {}".format(input_users, type(input_users)))
-		# self.users = {}
-		self.users = {u: asymm_encryption(users[u], Fernet.generate_key()) for u in users}
-		# for u in input_users:
-		# 	self.users[u] = asymm_encryption(Fernet.generate_key(), input_users[u])
+		for u in users:
+			users[u] = load_pem_public_key(users[u], backend=default_backend())
+		self.users = {u: secfs.crypto.encrypt_asym(users[u], Fernet.generate_key()) for u in users}
 
 		self.groups = {}
 		for g in groups:
 			group_key = Fernet.generate_key()
-			self.groups[g] = {u: asymm_encryption(users[u], group_key) for u in groups[g]}
+			self.groups[g] = {u: secfs.crypto.encrypt_asym(users[u], group_key) for u in groups[g]}
 
 		print("SymKeyStore: users: {}\n groups: {}".format(users, groups))

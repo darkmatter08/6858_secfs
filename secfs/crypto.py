@@ -29,7 +29,6 @@ def decrypt_sym(key, data):
     """
     Decrypt the given data with the given key.
     """
-    # print("decrypt_sym: {}".format(key))
     f = Fernet(key)
     return f.decrypt(data)
 
@@ -37,7 +36,6 @@ def encrypt_sym(key, data):
     """
     Encrypt the given data with the given key.
     """
-    # print("encrypt_sym: {}".format(key))
     f = Fernet(key)
     return f.encrypt(data)
 
@@ -115,11 +113,23 @@ def verify(pubkey, signature, data):
     return True
 
 def encrypt_asym(pubkey, data):
-    # TODO: implement
-    return data
+    ciphertext = pubkey.encrypt(
+        data,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA1()),
+            algorithm=hashes.SHA1(),
+            label=None
+        )
+    )
+    return ciphertext
 
 def decrypt_asym(privkey, data):
-    # TODO: implement
-    return data
-
-
+    plaintext = privkey.decrypt(
+        data,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA1()),
+            algorithm=hashes.SHA1(),
+            label=None
+        )
+    )
+    return plaintext

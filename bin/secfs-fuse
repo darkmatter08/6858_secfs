@@ -15,6 +15,7 @@ import secfs.fs
 from secfs.types import I, Principal, User, Group
 from secfs.SymKeyStore import SymKeyStore
 import base64
+import secfs.crypto
 
 # Welcome to the SecFS secure file system.
 # This is the main entry point for all FUSE file system operations.
@@ -38,7 +39,6 @@ import base64
 #    world-readable bit (umask 0004).
 #  - The owner of a group-writeable file will be shown as the user that last
 #    edited the file, similar to in SUNDR.
-# TODO: user-writeable, but group-readable
 
 # The following datastructures are used to keep mappings from virtual inodes
 # and file handles (i.e. the ones that FUSE shows the user), and the handles
@@ -372,21 +372,6 @@ class SecFS(llfuse.Operations):
         return True
 
     def get_symm_key(self, i, mod_as):
-        # global lastctx
-        # ctx = lastctx
-
-        # who = User(ctx.uid)
-
-        # print("\nget_symm_key:\nwho: {}, ctx.uid: {}".format(who, ctx.uid))
-        # print(dir(ctx))
-        # for item in dir(ctx):
-        #     print("ctx.{}: {}".format(item, getattr(ctx, item)))
-
-        # if (ctx.umask & 0o200) != 0:
-        #     # user gave up write permission, so donating to group
-        #     who = Group(ctx.gid)
-
-        # ALWAYS get symmetric key
         sks = pickle.loads(base64.b64decode(self.server.getSKS()['data']))
 
         # from i figure out file ownership (group or not?)
@@ -394,8 +379,11 @@ class SecFS(llfuse.Operations):
             encrypted_symm_key = sks.groups[i.p].get(mod_as, None)
         else:
             encrypted_symm_key = sks.users[mod_as]
-        # TODO asymmetric key decryption here
-        symm_key = encrypted_symm_key
+        private_key = secfs.crypto.keys[mod_as]
+        if private_key is None or encrypted_symm_key is None:
+            # self._post() DON'T NEED THIS
+            raise llfuse.FUSEError(errno.EACCES)
+        symm_key = secfs.crypto.decrypt_asym(private_key, encrypted_symm_key)
         return symm_key
 
     def read(self, fh, offset, length):
@@ -404,7 +392,7 @@ class SecFS(llfuse.Operations):
         try:
             fh = fhs[fh]
             self._pre(fh[1])
-            ret = secfs.fs.read(fh[1], fh[0], offset, length, self.get_symm_key(fh[0], fh[1])) # TODO: check this works
+            ret = secfs.fs.read(fh[1], fh[0], offset, length, self.get_symm_key(fh[0], fh[1]))
             self._post()
             return ret
         except PermissionError as e:
@@ -485,7 +473,7 @@ class SecFS(llfuse.Operations):
         try:
             fh = fhs[fh]
             self._pre(fh[1])
-            ret = secfs.fs.write(fh[1], fh[0], off, buf, self.get_symm_key(fh[0], fh[1])) # TODO: check this works
+            ret = secfs.fs.write(fh[1], fh[0], off, buf, self.get_symm_key(fh[0], fh[1]))
             self._post()
             return ret
         except PermissionError as e:

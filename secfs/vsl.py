@@ -1,4 +1,6 @@
-import copy, base64
+import copy, base64, pickle
+import secfs.fs
+import secfs.crypto
 
 # version structure
 class VS:
@@ -70,3 +72,24 @@ class VSL:
 
         # update the VSL with the new VS for this user
         self.l[u] = new_VS
+
+    def updateSignedVSL(self, user, vs):
+        print("signing user: {}".format(user))
+        key = secfs.crypto.keys[user]
+        pickled_vs = pickle.dumps(vs)
+        signature = secfs.crypto.sign(key, pickled_vs)
+        self.l[user] = (signature, pickled_vs)
+
+    def generateUnsignedVSL(self):
+        vsl = VSL(self.root)
+        for user in self.l.keys():
+            (signature, pickled_vs) = self.l[user]
+            pubkey = secfs.fs.usermap[user]
+            if not secfs.crypto.verify(pubkey, signature, pickled_vs):
+                print("signed user:{}".format(user))
+                raise RuntimeError("bad signature on VS of: {}".format(user))
+            vs = pickle.loads(pickled_vs)
+            vsl.l[user] = vs
+        return vsl
+
+

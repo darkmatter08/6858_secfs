@@ -86,3 +86,36 @@ def generate_key(user):
        encoding=serialization.Encoding.PEM,
        format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
+
+def sign(privkey, data):
+    signer = privkey.signer(
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    signer.update(data)
+    return signer.finalize()
+
+def verify(pubkey, signature, data):
+    verifier = pubkey.verifier(
+        signature,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    verifier.update(data)
+    return verifier.verify()
+
+def encrypt_asym(pubkey, data):
+    # TODO: implement
+    return data
+
+def decrypt_asym(privkey, data):
+    # TODO: implement
+    return data
+
+

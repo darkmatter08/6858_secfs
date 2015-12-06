@@ -13,6 +13,8 @@ from secfs.vsl import *
 # current_itables represents the current view of the file system's itables
 current_itables = {}
 vsl = None
+signed_vsl = None
+curr_user = None
 
 # a server connection handle is passed to us at mount time by secfs-fuse
 server = None
@@ -26,6 +28,8 @@ def pre(refresh, user):
     an exclusive server lock.
     """
     # print('start of pre, current_itables: {}'.format(current_itables))
+    global curr_user
+    curr_user = user
 
     encoded_signed_pickled_vsl = server.getVSL()
 
@@ -35,6 +39,8 @@ def pre(refresh, user):
         # this should only be run by root user
         # print("pre: User should be root: {}".format(user))
         vsl = VSL(user)
+        global signed_vsl
+        signed_vsl = VSL(user)
         return
 
     signed_pickled_vsl = base64.b64decode(encoded_signed_pickled_vsl["data"])
@@ -48,9 +54,11 @@ def pre(refresh, user):
 
     # print("pickled_vsl: {}".format(pickled_vsl))
 
-    global vsl
+    global signed_vsl
     # unpickle && set vsl variable
-    vsl = pickle.loads(pickled_vsl)
+    signed_vsl = pickle.loads(pickled_vsl)
+    global vsl
+    vsl = signed_vsl.generateUnsignedVSL()
 
     # load user itables into current_itables
     global current_itables
@@ -93,8 +101,12 @@ def post(push_vs):
         return
 
     global vsl
+    global signed_vsl
+    global curr_user
+    if curr_user in vsl.l:
+        signed_vsl.updateSignedVSL(curr_user, vsl.l[curr_user])
     # pickle vsl
-    pickled_vsl = pickle.dumps(vsl)
+    pickled_vsl = pickle.dumps(signed_vsl)
 
     # print("pickled_vsl")
     # print(pickled_vsl)

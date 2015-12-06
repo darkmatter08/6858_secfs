@@ -63,13 +63,12 @@ Your repository URL will show up on the submission site.
 It typically looks like this:
 
 ```
-https://6858.csail.mit.edu/git/project/<Your-API-Key>`
+https://6858.csail.mit.edu/git/project/<Your-API-Key-Hash>`
 ```
 
-Note that other members in your group will see different URLs that
-contain their own API key.  Both URLs will point to the same repository
-as long as you are in the same group.  **Do NOT** share your own
-repository URL (and thus your API key) with anybody else.
+Note that other members in your group will see different URLs that contain
+their own API key hash.  Both URLs will point to the same repository as long as
+you are in the same group. 
 
 One person in your group must initialize the group repository from our
 SecFS code skeleton:
@@ -78,14 +77,14 @@ SecFS code skeleton:
 $ git clone https://github.com/mit-pdos/secfs-skeleton.git secfs
 $ cd secfs
 $ git remote rename origin upstream
-$ git remote add origin https://6858.csail.mit.edu/git/project/<Your-API-Key>
+$ git remote add origin https://6858.csail.mit.edu/git/project/<Your-API-Key-Hash>
 $ git push -u origin master
 ```
 
 After that, other members can simply clone from the group repository:
 
 ```
-$ git clone https://6858.csail.mit.edu/git/project/<Their-API-Key> secfs
+$ git clone https://6858.csail.mit.edu/git/project/<Their-API-Key-Hash> secfs
 $ cd secfs
 $ git remote add upstream https://github.com/mit-pdos/secfs-skeleton.git
 ```
@@ -94,8 +93,8 @@ Validate that your remote repositories are correct:
 
 ```
 $ git remote -v
-origin  https://6858.csail.mit.edu/git/project/<Your-API-Key> (fetch)
-origin  https://6858.csail.mit.edu/git/project/<Your-API-Key> (push)
+origin  https://6858.csail.mit.edu/git/project/<Your-API-Key-Hash> (fetch)
+origin  https://6858.csail.mit.edu/git/project/<Your-API-Key-Hash> (push)
 upstream    https://github.com/mit-pdos/secfs-skeleton.git (fetch)
 upstream    https://github.com/mit-pdos/secfs-skeleton.git (push)
 ```
@@ -108,7 +107,7 @@ If you reset your API key on the submission site, you must update the
 remote repository URL as well:
 
 ```
-$ git remote set-url origin https://6858.csail.mit.edu/git/project/<New-API-Key>
+$ git remote set-url origin https://6858.csail.mit.edu/git/project/<New-API-Key-Hash>
 ```
 
 If you are working on the project on your own, follow the same
@@ -374,13 +373,13 @@ the mounted file system, an error is given:
 
 This happens because the second client does not have access to the
 file system's `i`-tables, since these are (currently) only stored in
-the memory of the first client. In SUNDR, these `i`-tables are not
-persisted directly; instead, the clients construct, upload, and download
-Version Structures (or VSes) that describe *changes* to the file system.
-These are downloaded from the server, verified, and then used to
-reconstruct the `i`-tables locally. When the file system is changed, a
-new, signed VS is uploaded to the server, so that other clients can see
-the change.
+the memory of the first client. In SUNDR, these `i`-tables are persisted
+on the server, and changes to the `i`-tables of users and groups are
+announced through Version Structures (or VSes) that describe *changes*
+to the file system. These are downloaded from the server, verified, and
+then used to verify downloaded `i`-tables locally. When the file system
+is changed, a new, signed VS is uploaded to the server, so that other
+clients can see the change.
 
 Specifically, your goal for the first exercise is to be able to start a
 second SecFS client (see "Interacting with the file system") on a
@@ -395,8 +394,7 @@ explore the file system.
 You may want to first get the list working, and only afterwards add
 cryptographic signing and verification of the VSes. You should consider
 implementing your cryptographic operations in `secfs/crypto.py`. Public
-keys for users are available in `secfs.fs.usermap` (key is UNIX user
-ID).
+keys for users are available in `secfs.fs.usermap` (key is a `User`).
 
 When you can read files in the file system using a second client, try to
 create a few file (as root) in one client, and verify that this file
@@ -452,7 +450,7 @@ group (group 100).
 To exemplify, you will want to test some commands long the lines of:
 ```shell
 # client 1
-sudo sh -c 'umask 0200; sg users \"mkdir mnt/shared\"'
+sudo sh -c 'umask 0200; sg users "mkdir mnt/shared"'
 ls -la shared # should print uid=root, gid=users, permissions=dr-xrwxr-x
 
 # client 2
@@ -465,11 +463,14 @@ additional shared directories, which root should be able to manipulate.
 
 ### Exercise 3: Read-permissions
 
-For this lab, we also require that you implement read-permission. In
+For this lab, we also require that you implement read-permissions. In
 particular, if a user specifies that a file is read-protected, its
 contents should be hidden from the server, as well as from any other
 user not named in the ACL (i.e. that is not the user who created it, or
-that is not in the group the creator shared the file with).
+that is not in the group the creator shared the file with). Note that it
+is *not* sufficient to simply check the permission bits on the file; a
+malicious client or server should not be *able* to see the file or
+directory contents, even if they bypass all the permission checks.
 
 Similarly to how we implement group-permissions, we also hijack umask to
 allow users to express that they do not wish a file to be

@@ -274,7 +274,10 @@ class SecFS(llfuse.Operations):
 
         global lastctx
         self._pre(User(lastctx.uid))
-        i = secfs.store.tree.find_under(inodes[inode_p], name)
+
+        parent_i = inodes[inode_p]
+
+        i = secfs.store.tree.find_under(inodes[inode_p], name, symm_key=self.get_symm_key(parent_i, User(lastctx.uid)))
         if i == None:
             self._post()
             raise llfuse.FUSEError(errno.ENOENT)
@@ -311,9 +314,9 @@ class SecFS(llfuse.Operations):
 
         node = secfs.fs.get_inode(fhs[fh][0])
         if node.kind != 0:
-            raise llfuse.FUSEError(errno.ENOTDIR)
+            raise llfuse.FUSEError(errno.ENOTDIR)        
 
-        for e, o in secfs.fs.readdir(fhs[fh][0], off):
+        for e, o in secfs.fs.readdir(fhs[fh][0], off, self.get_symm_key(fhs[fh][0], fhs[fh][1])):
             print (e[0].decode('utf-8'), e[1], o)
             yield (e[0], _getattr(e[1]), o)
 
@@ -421,8 +424,10 @@ class SecFS(llfuse.Operations):
             # user masked world-readable, so encrypting file
             encrypt = True
 
+        parent_i = inodes[parent_inode]
+
         try:
-            i = secfs.fs.mkdir(inodes[parent_inode], name, User(ctx.uid), who)
+            i = secfs.fs.mkdir(inodes[parent_inode], name, User(ctx.uid), who, encrypt=encrypt, symm_key=self.get_symm_key(parent_i, User(ctx.uid)))
             return self._post_and_getattr(i)
         except PermissionError as e:
             print("Illegal access:", e)
@@ -450,8 +455,10 @@ class SecFS(llfuse.Operations):
             # user masked world-readable, so encrypting file
             encrypt = True
 
+        parent_i = inodes[parent_inode]
+
         try:
-            i = secfs.fs.create(inodes[parent_inode], name, User(ctx.uid), who, encrypt=encrypt)
+            i = secfs.fs.create(inodes[parent_inode], name, User(ctx.uid), who, encrypt=encrypt, symm_key=self.get_symm_key(parent_i, User(ctx.uid)))
             ret = (new_fh(i, ctx.uid), _getattr(i))
             self._post()
             return ret

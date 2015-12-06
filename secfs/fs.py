@@ -81,7 +81,7 @@ def init(owner, users, groups):
 
     return root_i
 
-def _create(parent_i, name, create_as, create_for, isdir, encrypt=False):
+def _create(parent_i, name, create_as, create_for, isdir, encrypt=False, symm_key=None):
     """
     _create allocates a new file, and links it into the directory at parent_i
     with the given name. The new file is owned by create_for, but is created
@@ -114,6 +114,8 @@ def _create(parent_i, name, create_as, create_for, isdir, encrypt=False):
     node.kind = 0 if isdir else 1
     node.ex = isdir
 
+    parent_node = get_inode(parent_i)
+
     # FIXME
     #
     # Here, you will need to:
@@ -132,33 +134,39 @@ def _create(parent_i, name, create_as, create_for, isdir, encrypt=False):
     if i == None:
         raise RuntimeError
     if isdir:
-        new_ihash = secfs.store.tree.add(i, b'.', i)
+        new_ihash = secfs.store.tree.add(i, b'.', i, symm_key)
         secfs.tables.modmap(create_as, i, new_ihash)
-        new_ihash = secfs.store.tree.add(i, b'..', parent_i)
+        new_ihash = secfs.store.tree.add(i, b'..', parent_i, symm_key)
         secfs.tables.modmap(create_as, i, new_ihash)
     if create_for.is_group():
         group_i = secfs.tables.modmap(create_as, I(create_for), i)
         #TODO:we don't know whether to link to i or group_i
         # Passes same number of tests (57)
-        link(create_as, group_i, parent_i, name)
+        if not parent_node.encrypt:
+            link(create_as, group_i, parent_i, name)
+        else:
+            link(create_as, group_i, parent_i, name, symm_key)
         return group_i
-    link(create_as, i, parent_i, name)
+    if not parent_node.encrypt:
+        link(create_as, i, parent_i, name)
+    else:
+        link(create_as, i, parent_i, name, symm_key)
     return i
 #    return I(User(0), 0)
 
-def create(parent_i, name, create_as, create_for, encrypt=False):
+def create(parent_i, name, create_as, create_for, encrypt=False, symm_key=None):
     """
     Create a new file.
     See secfs.fs._create
     """
-    return _create(parent_i, name, create_as, create_for, False, encrypt=encrypt)
+    return _create(parent_i, name, create_as, create_for, False, encrypt=encrypt, symm_key=symm_key)
 
-def mkdir(parent_i, name, create_as, create_for):
+def mkdir(parent_i, name, create_as, create_for, encrypt=False, symm_key=None):
     """
     Create a new directory.
     See secfs.fs._create
     """
-    return _create(parent_i, name, create_as, create_for, True, encrypt=False) # TODO should we encrypt directories?
+    return _create(parent_i, name, create_as, create_for, True, encrypt=encrypt, symm_key=symm_key) # TODO should we encrypt directories?
 
 def read(read_as, i, off, size, symm_key=None):
     """
@@ -226,19 +234,20 @@ def write(write_as, i, off, buf, symm_key=None):
 
     return len(buf)
 
-def readdir(i, off):
+def readdir(i, off, symm_key=None):
     """
     Return a list of is in the directory at i.
     Each returned list item is a tuple of an i and an index. The index can be
     used to request a suffix of the list at a later time.
     """
-    dr = Directory(i)
+    dr = Directory(i, symm_key=symm_key)
     if dr == None:
         return None
 
     return [(i, index+1) for index, i in enumerate(dr.children) if index >= off]
 
-def link(link_as, i, parent_i, name):
+
+def link(link_as, i, parent_i, name, symm_key=None):
     """
     Adds the given i into the given parent directory under the given name.
     """
@@ -254,5 +263,15 @@ def link(link_as, i, parent_i, name):
         else:
             raise PermissionError("cannot create in user-writeable directory {0} as {1}".format(parent_i, link_as))
 
-    parent_ihash = secfs.store.tree.add(parent_i, name, i)
-    secfs.tables.modmap(link_as, parent_i, parent_ihash)
+    node = get_inode(parent_i)
+    if not node.encrypt:
+        parent_ihash = secfs.store.tree.add(parent_i, name, i)
+        secfs.tables.modmap(link_as, parent_i, parent_ihash)
+    else:
+        if not secfs.access.can_write(link_as, i):
+            raise PermissionError("trying to modify directory without permission")
+        else:
+            parent_ihash = secfs.store.tree.add(parent_i, name, i, symm_key=symm_key)
+            secfs.tables.modmap(link_as, parent_i, parent_ihash)
+            
+

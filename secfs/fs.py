@@ -20,6 +20,11 @@ owner = None
 # root_i is the i of the root of the current share
 root_i = None
 
+server = None
+def register(_server):
+    global server
+    server = _server
+
 def get_inode(i):
     """
     Shortcut for retrieving an inode given its i.
@@ -206,6 +211,7 @@ def write(write_as, i, off, buf, symm_key=None):
             raise PermissionError("cannot write to user-owned file {0} as {1}".format(i, write_as))
 
     node = get_inode(i)
+    old_hash = secfs.tables.resolve(i)
 
     # TODO: this is obviously stupid -- should not get rid of blocks that haven't changed
     bts = node.read()
@@ -230,6 +236,9 @@ def write(write_as, i, off, buf, symm_key=None):
     # put new hash in tree
     new_hash = secfs.store.block.store(node.bytes())
     secfs.tables.modmap(write_as, i, new_hash)
+    if new_hash != old_hash:
+        global server
+        server.free(old_hash)
 
     return len(buf)
 

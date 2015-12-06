@@ -73,7 +73,6 @@ def pre(refresh, user):
         group_hash = best_group_hash[group]
         current_itables[group] = Itable.load(group_hash)
 
-    t = Itable.load(vsl.l[user].ihandle)
     secfs.fs.root_i = I(vsl.root, inumber=0)
 
     if refresh != None:
